@@ -1,12 +1,12 @@
 # 05 · TCP 延迟对照实验
 
-2026-11-18（北京时间）。Ubuntu 与 Kali 的 Host-Only 链路已连通，Ubuntu 收到了 `192.168.56.10` 的两次 ping 应答（`0.974`、`0.520` ms）。从 Ubuntu 连到 Kali 的 SSH 端口可以取得主机公钥，现有客户端公钥未获 Kali 账户授权。本次未取得 Kali 客户端结果，**Host-Only 上的五次基线和五次加延迟传输待实测**。下文把已完成的 Ubuntu 容器对照单独列出。
+2026-11-18（北京时间），完成 Kali → Ubuntu 的 Host-Only 下载实验和 Ubuntu 隔离容器对照。两种拓扑各测五次基线、五次客户端出站增加 80 ms 的传输。Host-Only 的 TCP 建连中位数由 **1.032 ms** 增至 **84.113 ms**，下载总耗时中位数由 **50.461 ms** 增至 **1,340.687 ms**。Host-Only 十次下载均通过 SHA-256 校验。
 
 ## 拓扑与控制变量
 
 | 链路 | 数据方向和端点 | 延迟位置 |
 | --- | --- | --- |
-| Host-Only（待测） | Ubuntu `enp0s8` `192.168.56.20:8050` → VirtualBox Host-Only → Kali `eth1` 下的临时 ipvlan `192.168.56.11` | Kali 临时网络命名空间内 ipvlan 的 egress，加 `80ms`。Kali 原 `eth1` 的 `192.168.56.10` 和 Ubuntu 管理 SSH 不在该队列内。 |
+| Host-Only | Ubuntu `enp0s8` `192.168.56.20:8050` → VirtualBox Host-Only → Kali `eth1` 下的临时 ipvlan `192.168.56.11` | Kali 临时网络命名空间内 ipvlan 的 egress，加 `80ms`。Kali 原 `eth1` 的 `192.168.56.10` 和 Ubuntu 管理 SSH 不在该队列内。 |
 | Ubuntu 隔离容器（已测） | BusyBox HTTP 服务 `172.18.0.2:8050` → Docker internal bridge → curl 客户端 `172.18.0.3` | 客户端容器 `eth0` egress，加 `80ms`。Ubuntu 的 `enp0s8`、`enp0s3` 配置不变。 |
 
 `ip -4 route get 192.168.56.10` 在 Ubuntu 返回 `dev enp0s8 src 192.168.56.20`，Kali 的既有反向路由见 [实验 03](03-http-https-lab.md)。两种拓扑都以客户端下载为数据方向。基线和延迟组使用同一个 8 MiB 自生成文件、同一个 HTTP/1.1 URL、相同的 curl 参数和每次新建的 TCP 连接。所有文件以 Ubuntu 的 SHA-256 为准。先跑五次基线，再加 `netem limit 10000 delay 80ms` 跑五次。客户端出站队列会延迟 ping 请求、TCP SYN、HTTP 请求和上传至服务端的 ACK。服务端出站方向没有配置延迟。[Linux netem 手册](https://man7.org/linux/man-pages/man8/tc-netem.8.html)
@@ -40,9 +40,50 @@
 
 原始样本、下载文件、逐轮结果和 qdisc 计数位于 Ubuntu 仓库外的 `~/Downloads/bilibili-network/05-tcp-latency-bx1qnB/`，容器数据来自 `docker-control-V7UNg3/results.log`。首次容器预检因服务端容器用户无法读取私有样本而收到 404，改用样本所有者的 UID 运行服务后从基线重新测量。对照数据仅代表此次 Ubuntu 内部网桥。
 
+## Host-Only 跨机实测
+
+由 Windows 通过 `ssh ubuntu` 启动 Python HTTP 服务。服务报告 `READY` 后，在 Kali 终端授权 sudo，由隔离命名空间内的 curl 访问 `192.168.56.20:8050`。IPvlan `tl71090` 在基线使用 `noqueue`，延迟组应用 `netem limit 10000 delay 80ms`。延迟组末尾的 qdisc 计数为 1,765 个包，报告 0 个队列丢包。Kali 的 curl 建连超时设为 15 秒，以保留秒级建连的观测机会。
+
+以下时间取 Kali 时钟。每轮返回 HTTP 200、8,388,608 字节。Windows 通过 `ssh kali` 重新对十个文件执行 SHA-256 校验，全部与 Ubuntu 源文件及容器实验的哈希一致，值为 `e30eefce67c83ec7b056e25f7c9ed48dd189f325106a67bcb15d3b3b478f6d16`。Kali 原始结果日志与 Ubuntu 收到的回传副本逐字节一致。
+
+| 组别 | 轮次 | 开始时间 | Kali 源端口 | RTT (ms) | TCP (ms) | 总耗时 (ms) | 吞吐 (MiB/s) | SHA-256 |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 基线 | 1 | 21:20:09 | 60218 | 0.639 | 1.032 | 46.222 | 173.078 | 通过 |
+| 基线 | 2 | 21:20:09 | 60220 | 1.061 | 0.988 | 47.465 | 168.545 | 通过 |
+| 基线 | 3 | 21:20:09 | 60236 | 0.705 | 1.023 | 50.461 | 158.538 | 通过 |
+| 基线 | 4 | 21:20:09 | 60240 | 0.824 | 2.093 | 62.902 | 127.182 | 通过 |
+| 基线 | 5 | 21:20:10 | 60256 | 1.505 | 3.412 | 62.593 | 127.810 | 通过 |
+| 延迟 | 1 | 21:20:10 | 60260 | 82.188 | 81.562 | 1329.239 | 6.018 | 通过 |
+| 延迟 | 2 | 21:20:11 | 60262 | 81.231 | 88.639 | 1340.687 | 5.967 | 通过 |
+| 延迟 | 3 | 21:20:13 | 60276 | 86.272 | 94.393 | 1354.940 | 5.904 | 通过 |
+| 延迟 | 4 | 21:20:14 | 46580 | 80.665 | 84.113 | 1372.460 | 5.829 | 通过 |
+| 延迟 | 5 | 21:20:16 | 46596 | 81.585 | 82.942 | 1253.088 | 6.384 | 通过 |
+
+| 拓扑和组别 | RTT 中位数 (ms) | TCP 中位数 (ms) | 总耗时中位数 (ms) | 吞吐中位数 (MiB/s) |
+| --- | ---: | ---: | ---: | ---: |
+| Host-Only 基线 | 0.824 | 1.032 | 50.461 | 158.538 |
+| Host-Only 延迟 | 81.585 | 84.113 | 1340.687 | 5.967 |
+| Ubuntu 容器基线 | 0.059 | 0.445 | 50.794 | 157.499 |
+| Ubuntu 容器延迟 | 81.524 | 80.968 | 1101.085 | 7.266 |
+
+Host-Only 的基线 RTT 和建连中位数高于 Ubuntu 容器基线，两组基线下载总耗时则接近 50 ms。增加出站延迟后，Host-Only 的 RTT 与建连中位数分别增加 80.761 ms 和 83.081 ms，与容器的 81.465 ms 和 80.523 ms 接近。Host-Only 延迟组的下载总耗时中位数比容器延迟组高 239.602 ms，吞吐中位数低 1.299 MiB/s。两组都包含请求与 ACK 经延迟队列的影响，HTTP 服务实现、虚拟网络和运行时调度也有差异。数据只覆盖同一个 8 MiB 样本、每组五轮，无法分离各因素对吞吐差异的贡献。
+
+### SYN 时间线
+
+本次 Host-Only 首次握手均在 100 ms 内完成，最慢为延迟组第 3 轮（`94.393 ms`，源端口 `60276`）。Kali 的 ipvlan 和 Ubuntu 的 `enp0s8` 均抓到了这十条连接各一次 SYN 和 SYN-ACK，按四元组及 TCP 序列号对应，未观察到 SYN 重传。Kali 共捕获 64 包，Ubuntu 共捕获 66 包，两边均报告 0 个内核抓包丢包。
+
+| 最慢轮次，源端口 `60276` | SYN（Unix 秒） | SYN-ACK（Unix 秒） | 同一抓包点间隔 (ms) |
+| --- | ---: | ---: | ---: |
+| Kali ipvlan | 1795008013.628830 | 1795008013.630751 | 1.921 |
+| Ubuntu `enp0s8` | 1795008009.670878 | 1795008009.670942 | 0.064 |
+
+两台 VM 的时钟有偏差，按同一抓包点计算间隔。Kali 抓到的是经过出站队列、交给网卡发送的 SYN，间隔未计入 SYN 在队列里的等待时间。curl 的 `time_connect` 从请求启动计时，因此包含这段等待。此次抓包覆盖 Host-Only 测试，先前容器组 6.870 秒建连的原因仍未确定。
+
+Kali 的十份下载文件、`results.log` 和 `kali-ipvlan.pcap` 保存在仓库外的 `~/tcp-latency-120327-xnA1iu/`。Ubuntu 的 `ubuntu-enp0s8.pcap`、`ubuntu-syn.log`、`server.log` 和 `cleanup.log` 位于 `~/Downloads/bilibili-network/05-hostonly-20261118-120327Z/retry/`，回传日志为原始样本目录中的 `kali-results-212205571265.log`。Windows 的抓包副本、SYN 导出和复核记录位于 `Downloads\bilibili-network\05-hostonly-20261118-120327Z\`。
+
 ## 清理与 SSH 验证
 
-`cleanup.log` 记录了北京时间 `20:00:45` 的复核。Ubuntu 的临时 HTTP 监听已停止，两个实验容器和内部网桥已移除。Ubuntu `enp0s8`、`enp0s3` 的 `fq_codel` 设置与预检相同。经 Host-Only 重新取得 Ubuntu、Kali 的 SSH ED25519 主机公钥，指纹均与预检一致，`ss` 也显示 Ubuntu 既有管理 SSH 连接仍为 `ESTAB`。Kali 上没有收到本次实验的执行记录。
+容器对照结束后，`20:00:45` 的 `cleanup.log` 确认临时 HTTP 监听、两个实验容器和内部网桥均已移除。Host-Only 测试结束后，Kali 日志记录了命名空间删除成功，`eth1` 的 qdisc 和探测到的 Ubuntu SSH ED25519 主机密钥指纹与预检一致。Windows 通过 SSH 再次确认 Kali 无残留实验命名空间或接口。Ubuntu 的后续 `cleanup.log` 确认 `192.168.56.20:8050` 的临时 HTTP 监听已停止、抓包容器已移除，`enp0s8` 和 `enp0s3` 的 qdisc 与预检一致。Windows 使用 `ssh ubuntu`、`ssh kali` 以及两台 VM 的 Host-Only `:22` 均完成了认证登录。
 
 ## Ubuntu 服务复现
 
@@ -57,9 +98,21 @@ timeout --foreground --kill-after=5s 20m \
   python3 -u "$lab_dir/server.py" "$lab_dir" | tee -a "$lab_dir/server.log"
 ```
 
+如需同时记录 Ubuntu 侧握手，在另一个 Ubuntu 终端沿用 [实验 04](04-ssh-transfer-paths.md) 的抓包镜像。提前启动并在 Kali 回传后按 Ctrl+C，再导出 SYN 时间线。
+
+```bash
+cap_dir=$(mktemp -d "$HOME/Downloads/bilibili-network/05-hostonly-capture-XXXXXX")
+docker run --rm --stop-signal SIGINT --network host --cap-drop ALL --cap-add NET_RAW \
+  --security-opt no-new-privileges --read-only bilibili-network-capture:tcpdump-ubuntu \
+  -i enp0s8 -nn -p -s 128 -Z root -w - \
+  'host 192.168.56.11 and (arp or icmp or (tcp port 8050 and (tcp[tcpflags] & (tcp-syn|tcp-rst|tcp-fin) != 0)))' \
+  >"$cap_dir/ubuntu-enp0s8.pcap" 2>"$cap_dir/capture.log"
+tcpdump -nn -tt -r "$cap_dir/ubuntu-enp0s8.pcap" 'tcp[tcpflags] & tcp-syn != 0'
+```
+
 ## Kali 单次粘贴执行
 
-确认 Kali 的 `eth1` 保持原 Host-Only 连接。实验使用空闲的 `192.168.56.11`，若该地址已被占用，应先改为同网段另一未分配地址。命令在 sudo 会话内新建临时命名空间，只在实验虚拟网卡上添加 netem。正常完成、可捕获的错误或中断都会删除命名空间。前后分别取得 Ubuntu 的 SSH ED25519 主机公钥并比较，也对比 Kali `eth1` 的队列设置。该探测验证 SSH 服务应答与主机身份，无需提交 SSH 凭据。
+确认 Kali 的 `eth1` 保持原 Host-Only 连接。实验使用空闲的 `192.168.56.11`，若该地址已被占用，应先改为同网段另一未分配地址。下方地址预检使用 Kali 的 Thomas Habets 版 `arping`。命令在 sudo 会话内新建临时命名空间，只在实验虚拟网卡上添加 netem，并在该网卡上保存握手、ARP 和 ICMP 的包头。正常完成、可捕获的错误或中断都会停止抓包并删除命名空间。前后分别取得 Ubuntu 的 SSH ED25519 主机公钥并比较，也对比 Kali `eth1` 的队列设置。该探测验证 SSH 服务应答与主机身份，无需提交 SSH 凭据。
 
 ```bash
 bash <<'LAB'
@@ -82,13 +135,30 @@ parent=$(awk '{for(i=1;i<NF;i++) if($i=="dev") print $(i+1)}' <<<"$route")
   exit 1
 }
 if command -v arping >/dev/null; then
-  sudo arping -D -I "$parent" -c 2 -w 3 "$client"
+  rc=0
+  sudo arping -i "$parent" -c 2 -w 3 "$client" || rc=$?
+  case "$rc" in
+    1) printf '未收到 %s 的 ARP 应答\n' "$client" ;;
+    0) printf '%s 已回应 ARP，停止实验\n' "$client" >&2; exit 1 ;;
+    *) printf 'ARP 预检失败（%s）\n' "$rc" >&2; exit 1 ;;
+  esac
 fi
 expected=$(curl -q --noproxy '*' -fsS --max-time 5 "$base/sha256")
 [[ "$expected" =~ ^[0-9a-f]{64}$ ]]
 printf '预检通过，正在测两组各五次。失败详情见 %s/results.log\n' "$out"
 
+cap_job=
+stop_capture() {
+  if [[ -n "$cap_job" ]]; then
+    if [[ -s "$out/capture.pid" ]]; then
+      sudo -n kill -TERM "$(cat "$out/capture.pid")" 2>/dev/null || true
+    fi
+    wait "$cap_job" || true
+    cap_job=
+  fi
+}
 cleanup() {
+  stop_capture
   if ip netns list | awk '{print $1}' | grep -Fxq "$ns"; then
     sudo ip netns del "$ns"
   fi
@@ -113,6 +183,17 @@ ssh_check() {
   sudo ip -n "$ns" addr add "$client/24" dev "$dev"
   sudo ip -n "$ns" link set "$dev" up
   sudo ip -n "$ns" link set lo up
+  sudo -n ip netns exec "$ns" sh -c 'echo "$$" >"$1"; shift; exec timeout --foreground --kill-after=5s 120s tcpdump "$@"' \
+    sh "$out/capture.pid" -i "$dev" -nn -p -s 128 -Z root -w - \
+    'arp or icmp or (tcp port 8050 and (tcp[tcpflags] & (tcp-syn|tcp-rst|tcp-fin) != 0))' \
+    >"$out/kali-ipvlan.pcap" 2>"$out/capture.log" &
+  cap_job=$!
+  for attempt in {1..60}; do
+    if grep -q 'listening on' "$out/capture.log"; then break; fi
+    if ! kill -0 "$cap_job" 2>/dev/null; then break; fi
+    sleep .1
+  done
+  grep -F 'listening on' "$out/capture.log"
   sudo ip -n "$ns" route get "$server"
   sudo ip netns exec "$ns" ping -n -c 1 -W 3 "$server"
 
@@ -127,7 +208,7 @@ ssh_check() {
       sudo ip netns exec "$ns" ping -n -c 1 -W 3 "$server"
       file="$out/$phase-$round.bin"
       sudo ip netns exec "$ns" runuser -u "$owner" -- \
-        curl -q --noproxy '*' --http1.1 -fsS --connect-timeout 5 --max-time 45 \
+        curl -q --noproxy '*' --http1.1 -fsS --connect-timeout 15 --max-time 45 \
         --output "$file" \
         --write-out 'code=%{http_code} local=%{local_ip}:%{local_port} remote=%{remote_ip}:%{remote_port} tcp_s=%{time_connect} total_s=%{time_total} bytes=%{size_download} Bps=%{speed_download}\n' \
         "$base/payload.bin"
