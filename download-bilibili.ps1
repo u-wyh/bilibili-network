@@ -1,9 +1,13 @@
 #requires -Version 5.1
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Single')]
 param(
-    [Parameter(Mandatory, Position = 0)]
+    [Parameter(Mandatory, Position = 0, ParameterSetName = 'Single')]
     [ValidatePattern('(?-i:\ABV[A-Za-z0-9]{10}\z)')]
     [string]$Bv,
+
+    [Parameter(Mandatory, ParameterSetName = 'Batch')]
+    [ValidateNotNullOrEmpty()]
+    [string]$ListPath,
 
     [ValidateRange(1, [int]::MaxValue)]
     [int]$Part = 1,
@@ -26,47 +30,110 @@ if (-not $PSBoundParameters.ContainsKey('OutputDirectory')) {
 }
 
 $outputPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDirectory)
-$fileName = "${Bv}_p${Part}.mp4"
-$target = Join-Path $outputPath $fileName
-if (Test-Path -LiteralPath $target) {
-    Write-Host "Already exists. Keeping: $target"
+
+function Invoke-BilibiliDownload {
+    param([string]$VideoId, [int]$VideoPart, [string]$DestinationDirectory)
+
+    $fileName = "${VideoId}_p${VideoPart}.mp4"
+    $target = Join-Path $DestinationDirectory $fileName
+    if (Test-Path -LiteralPath $target) {
+        Write-Host "Already exists. Keeping: $target"
+        return 'Existing'
+    }
+
+    [IO.Directory]::CreateDirectory($DestinationDirectory) | Out-Null
+    Get-Command ssh.exe, scp.exe -CommandType Application | Out-Null
+
+    $runId = [guid]::NewGuid().ToString('N')
+    $remoteDir = "Downloads/bilibili-network/windows-$runId"
+    # Only validated BV/part values and the generated directory enter the remote command.
+    $remoteCommand = 'bash -c ''TIMEFORMAT=Ubuntu\ download\ and\ merge:\ %3R\ s; {{ time ~/bilibili-network/download-bilibili.sh --part {0} --output ~/{1} {2}; }} 2>&1''' -f $VideoPart, $remoteDir, $VideoId
+    & ssh.exe ubuntu $remoteCommand | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        throw "Ubuntu download failed for $VideoId P$VideoPart (ssh exit code $LASTEXITCODE). See the ssh and downloader output above."
+    }
+
+    $remoteFile = "ubuntu:$remoteDir/$fileName"
+    $partial = Join-Path $DestinationDirectory ".$runId.part"
+    try {
+        $clock = [Diagnostics.Stopwatch]::StartNew()
+        & scp.exe $remoteFile $partial | Out-Host
+        $clock.Stop()
+        $scpExitCode = $LASTEXITCODE
+        Write-Host ('SCP retrieval: {0:F3} s' -f $clock.Elapsed.TotalSeconds)
+        if ($scpExitCode -ne 0) {
+            throw "MP4 transfer failed (scp exit code $scpExitCode). Ubuntu file: $remoteFile"
+        }
+        $received = Get-Item -LiteralPath $partial -ErrorAction SilentlyContinue
+        if (-not $received -or $received.Length -le 0) {
+            throw "MP4 transfer produced no data. Ubuntu file: $remoteFile"
+        }
+        try {
+            [IO.File]::Move($partial, $target)
+        } catch [IO.IOException] {
+            if (Test-Path -LiteralPath $target) {
+                Write-Host "Already exists. Keeping: $target"
+                return 'Existing'
+            }
+            throw
+        }
+    } finally {
+        if (Test-Path -LiteralPath $partial) {
+            Remove-Item -LiteralPath $partial
+        }
+    }
+
+    Write-Host "Saved: $target"
+    return 'Saved'
+}
+
+if ($PSCmdlet.ParameterSetName -eq 'Single') {
+    $null = Invoke-BilibiliDownload $Bv $Part $outputPath
     return
 }
 
-[IO.Directory]::CreateDirectory($outputPath) | Out-Null
-Get-Command ssh.exe, scp.exe -CommandType Application | Out-Null
-
-$runId = [guid]::NewGuid().ToString('N')
-$remoteDir = "Downloads/bilibili-network/windows-$runId"
-$remoteCommand = "~/bilibili-network/download-bilibili.sh --part $Part --output ~/$remoteDir $Bv"
-& ssh.exe ubuntu $remoteCommand
-if ($LASTEXITCODE -ne 0) {
-    throw "Ubuntu download failed for $Bv P$Part (ssh exit code $LASTEXITCODE). See the ssh and downloader output above."
-}
-
-$remoteFile = "ubuntu:$remoteDir/$fileName"
-$partial = Join-Path $outputPath ".$runId.part"
-try {
-    & scp.exe $remoteFile $partial
-    if ($LASTEXITCODE -ne 0) {
-        throw "MP4 transfer failed (scp exit code $LASTEXITCODE). Ubuntu file: $remoteFile"
+$lineNumber = 0
+$results = foreach ($line in (Get-Content -LiteralPath $ListPath -Encoding UTF8)) {
+    $lineNumber++
+    $entry = $line.Trim()
+    if (-not $entry -or $entry.StartsWith('#')) {
+        continue
     }
-    if ((Get-Item -LiteralPath $partial).Length -le 0) {
-        throw "MP4 transfer produced an empty file. Ubuntu file: $remoteFile"
-    }
+
+    $status = 'Failed'
+    $detail = ''
     try {
-        [IO.File]::Move($partial, $target)
-    } catch [IO.IOException] {
-        if (Test-Path -LiteralPath $target) {
-            Write-Host "Already exists. Keeping: $target"
-            return
+        $match = [regex]::Match($entry, '\A(BV[A-Za-z0-9]{10})(?:\s+([0-9]+))?\z')
+        if (-not $match.Success) {
+            throw 'Expected a BV ID followed by an optional positive part number.'
         }
-        throw
+        $videoId = $match.Groups[1].Value
+        $videoPart = $Part
+        if ($match.Groups[2].Success -and
+            (-not [int]::TryParse($match.Groups[2].Value, [ref]$videoPart) -or $videoPart -lt 1)) {
+            throw 'Part number is out of range.'
+        }
+        $entry = "$videoId P$videoPart"
+        Write-Host "Processing line ${lineNumber}: $entry"
+        $status = Invoke-BilibiliDownload $videoId $videoPart $outputPath
+    } catch {
+        $detail = $_.Exception.Message
     }
-} finally {
-    if (Test-Path -LiteralPath $partial) {
-        Remove-Item -LiteralPath $partial
-    }
+    [pscustomobject]@{ Line = $lineNumber; Entry = $entry; Status = $status; Detail = $detail }
 }
 
-Write-Host "Saved: $target"
+$failedCount = 0
+foreach ($status in 'Saved', 'Existing', 'Failed') {
+    $items = @($results | Where-Object Status -eq $status)
+    Write-Host "${status}: $($items.Count)"
+    foreach ($item in $items) {
+        $detail = if ($item.Detail) { " - $($item.Detail)" } else { '' }
+        Write-Host "  Line $($item.Line): $($item.Entry)$detail"
+    }
+    if ($status -eq 'Failed') {
+        $failedCount = $items.Count
+    }
+}
+if ($failedCount -gt 0) {
+    throw "Batch finished with $failedCount failed item(s). See the summary above."
+}

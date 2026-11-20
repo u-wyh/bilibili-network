@@ -24,6 +24,31 @@ ssh ubuntu 'test -x ~/bilibili-network/download-bilibili.sh && echo ready'
 
 Windows 入口通过 `ssh ubuntu` 调用 Ubuntu 脚本，再用 `scp` 取回 MP4。Ubuntu 端保留副本，路径为 `~/Downloads/bilibili-network/windows-<运行标识>/` 下的同名文件。Windows 目标已存在时，入口提示并正常退出，保留原文件。下载或传输失败时会报告失败阶段并返回非零状态，未完成的本地传输文件会清理。
 
+### 批量清单
+
+用 `-ListPath` 读取 UTF-8 文本清单。每行写一个 BV 号，后面可用空格或制表符加分 P 编号。没有行内编号时，使用命令行的 `-Part`，省略该参数时使用 P1。空行及以 `#` 开头的整行注释会被跳过。
+
+```text
+# videos.txt
+BV1Fb4111732 1
+BV1Fb4111732
+```
+
+```powershell
+$out = Join-Path $HOME 'Downloads\bilibili-network\batch'
+.\download-bilibili.ps1 -ListPath .\videos.txt -OutputDirectory $out
+```
+
+清单按行执行。重复项或已有成品会列入 `Existing`，失败的行会列入 `Failed`，其余行继续执行。末尾按原行号列出 `Saved`、`Existing` 和 `Failed`。有失败时，批次结束后返回非零状态。
+
+失败后，先按汇总修正清单中的无效行，或解决 Ubuntu 下载、SCP 连接错误，再用原清单和原输出目录重跑。已完成的 MP4 会跳过，失败的条目从头下载。传输使用独立的 `.part` 文件，SCP 成功且收到数据后才保存为成品。异常退出留下的 `.part` 不会被视为已有 MP4。
+
+```powershell
+.\download-bilibili.ps1 -ListPath .\videos.txt -OutputDirectory $out
+```
+
+实际下载会分别输出 `Ubuntu download and merge` 和 `SCP retrieval` 的耗时。已有成品直接跳过，无需连接 Ubuntu。[第二版计时与验收](docs/07-download-timing.md)
+
 ## Ubuntu 直接下载
 
 在 Ubuntu 安装 FFmpeg 和 Python 虚拟环境，再安装实测用的 `yt-dlp`。
@@ -65,6 +90,7 @@ Bash 脚本接收 BV 号、`bilibili.com/video/BV…` 视频页链接，或直�
 | [04 · NAT 转发与 Host-Only 直连](docs/04-ssh-transfer-paths.md) | 核对两端 SSH 连接并测量 SCP 上传，确认 VirtualBox NAT 把 Windows 的 `2222` 转发到 Ubuntu 的 `22`，Host-Only 则直接连接 `22`。 |
 | [05 · TCP 延迟](docs/05-tcp-latency.md) | 在隔离客户端给出站流量增加 80 ms，Host-Only 的 TCP 建连中位数从 1.032 ms 升至 84.113 ms，下载总耗时也随之上升。 |
 | [06 · 游戏本与 Ubuntu 的双向 SCP](docs/06-local-ssh.md) | 在 NAT 和 Host-Only 上各测五轮上传与下载，本轮 Host-Only 上传中位耗时更短，NAT 下载中位耗时更短。 |
+| [07 · 第二版下载计时与双路径取回](docs/07-download-timing.md) | 分开计量真实下载与 SCP 取回，并复用同一 Ubuntu 成品对照两条取回路径，十次均通过 SHA-256 校验。 |
 
 ## Windows 端到端验收
 
