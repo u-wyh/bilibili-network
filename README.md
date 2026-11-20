@@ -1,8 +1,32 @@
 # B 站单分 P 下载
 
-## 安装
+## Windows 快速开始
 
-在 Ubuntu 上安装 FFmpeg 和 Python 虚拟环境，再安装实测用的 `yt-dlp`。
+在 Windows 的仓库根目录打开 PowerShell 5.1 或更高版本，并安装 OpenSSH 客户端（`ssh` 和 `scp`）。启动 Ubuntu 虚拟机，确保 SSH 服务正在运行，Windows 的 OpenSSH 配置中已有可登录这台虚拟机的 `ubuntu` 别名。本仓库的实验环境用 VirtualBox NAT 将 Windows 的 `127.0.0.1:2222` 转发到 Ubuntu 的 TCP `22`。[SSH 路径实验](docs/04-ssh-transfer-paths.md)
+
+在 Ubuntu 上按下节安装下载依赖，并确保 `~/bilibili-network/download-bilibili.sh` 可执行。Ubuntu 需要能访问 B 站。先在 Windows 运行以下命令确认 SSH 登录和脚本路径。
+
+```powershell
+ssh ubuntu 'test -x ~/bilibili-network/download-bilibili.sh && echo ready'
+```
+
+看到 `ready` 后运行下载命令。
+
+```powershell
+# 默认下载 P1
+.\download-bilibili.ps1 BV1Fb4111732
+
+# 指定分 P 和仓库外的输出目录
+.\download-bilibili.ps1 BV1Fb4111732 -Part 1 -OutputDirectory "$HOME\Downloads\bilibili-network\demo"
+```
+
+成品默认保存在 Windows 的 `下载` 文件夹下的 `bilibili-network` 子目录，通常是 `%USERPROFILE%\Downloads\bilibili-network`。脚本接收 BV 号，用 `-Part` 指定分 P，用 `-OutputDirectory` 指定保存位置，成品命名为 `BV号_p编号.mp4`。
+
+Windows 入口通过 `ssh ubuntu` 调用 Ubuntu 脚本，再用 `scp` 取回 MP4。Ubuntu 端保留副本，路径为 `~/Downloads/bilibili-network/windows-<运行标识>/` 下的同名文件。Windows 目标已存在时，入口提示并正常退出，保留原文件。下载或传输失败时会报告失败阶段并返回非零状态，未完成的本地传输文件会清理。
+
+## Ubuntu 直接下载
+
+在 Ubuntu 安装 FFmpeg 和 Python 虚拟环境，再安装实测用的 `yt-dlp`。
 
 ```bash
 sudo apt update
@@ -12,14 +36,12 @@ python3 -m venv "$tools_dir/venv"
 "$tools_dir/venv/bin/python" -m pip install yt-dlp==2026.10.26
 ```
 
-脚本先查找 `PATH` 上的 `yt-dlp` 和 `ffmpeg`，再分别查找 `$tools_dir/venv/bin/yt-dlp` 和 `$tools_dir/bin/ffmpeg`。Ubuntu 的 `ffmpeg` 软件包也提供用于验证的 `ffprobe`。如使用实验中的静态 FFmpeg，将 `ffmpeg` 和 `ffprobe` 放在 `$tools_dir/bin`，并加入 `PATH` 后再执行下面的 `ffprobe` 命令。[FFmpeg 静态构建](https://johnvansickle.com/ffmpeg/)
+脚本先查找 `PATH` 上的 `yt-dlp` 和 `ffmpeg`，再分别查找 `$tools_dir/venv/bin/yt-dlp` 和 `$tools_dir/bin/ffmpeg`。Ubuntu 的 `ffmpeg` 软件包也提供 `ffprobe`。如使用实验中的静态 FFmpeg，将 `ffmpeg` 和 `ffprobe` 放在 `$tools_dir/bin`，并加入 `PATH` 后再执行下面的 `ffprobe` 命令。[FFmpeg 静态构建](https://johnvansickle.com/ffmpeg/)
 
-## Ubuntu 使用
-
-在仓库根目录运行。
+在 Ubuntu 的仓库根目录运行。
 
 ```bash
-# 匿名下载 P1 到 ~/Downloads/bilibili-network
+# 默认下载 P1 到 ~/Downloads/bilibili-network
 ./download-bilibili.sh BV1Fb4111732
 
 # 指定分 P 和输出目录
@@ -30,29 +52,23 @@ ffprobe -v error -show_entries stream=codec_name,codec_type,width,height -of jso
   "$HOME/Downloads/bilibili-network/demo/BV1Fb4111732_p1.mp4"
 ```
 
-可输入 BV 号、`bilibili.com/video/BV…` 视频页链接，或直接跳转到该类页面的 `b23.tv` 短链接。用 `-p` 或 `--part` 指定分 P，省略时下载 P1。脚本忽略链接内的 `p` 参数。用 `-o` 或 `--output` 指定输出目录。
+Bash 脚本接收 BV 号、`bilibili.com/video/BV…` 视频页链接，或直接跳转到该类页面的 `b23.tv` 短链接。用 `-p` 或 `--part` 指定分 P，省略时下载 P1，链接内的 `p` 参数会被忽略。用 `-o` 或 `--output` 指定输出目录。
 
-成品命名为 `BV号_p编号.mp4`。脚本忽略本机 yt-dlp 配置，匿名选择 360p 格式，并在需要时用 FFmpeg 合并音视频。若没有匿名可用的 360p、下载或合并失败，脚本显示错误并返回非零状态。目标已存在时会提示并退出，保留原文件。更多选项见 `./download-bilibili.sh --help`。
+脚本忽略本机 yt-dlp 配置，匿名选择 360p 格式，并在需要时用 FFmpeg 合并音视频。若目标已存在、没有匿名可用的 360p，或下载与合并失败，脚本会提示并返回非零状态。更多选项见 `./download-bilibili.sh --help`。
 
-## 从 Windows 下载
+## 网络实验索引
 
-在 Ubuntu 上按上文安装依赖，并将可执行的 `download-bilibili.sh` 放在 `~/bilibili-network/`。Windows 需要 PowerShell 5.1 或更高版本、OpenSSH 客户端，以及能用 `ssh ubuntu` 登录的 SSH 配置。在 Windows 的仓库根目录运行：
+| 报告 | 实验与观察 |
+| --- | --- |
+| [02 · B 站代理抓包](docs/02-network-capture.md) | 在 Ubuntu 抓取下载期间的流量，观察到虚拟机向 Windows 代理发送明文 HTTP CONNECT，随后通过隧道进行 TLS 1.3 通信。 |
+| [03 · HTTP、HTTPS 与 CONNECT](docs/03-http-https-lab.md) | 在回环和 Host-Only 链路对照同一文件的 HTTP 与 HTTPS 下载，抓包可直接读到 HTTP 请求路径，也能看到 HTTPS 的 TLS 握手。 |
+| [04 · NAT 转发与 Host-Only 直连](docs/04-ssh-transfer-paths.md) | 核对两端 SSH 连接并测量 SCP 上传，确认 VirtualBox NAT 把 Windows 的 `2222` 转发到 Ubuntu 的 `22`，Host-Only 则直接连接 `22`。 |
+| [05 · TCP 延迟](docs/05-tcp-latency.md) | 在隔离客户端给出站流量增加 80 ms，Host-Only 的 TCP 建连中位数从 1.032 ms 升至 84.113 ms，下载总耗时也随之上升。 |
+| [06 · 游戏本与 Ubuntu 的双向 SCP](docs/06-local-ssh.md) | 在 NAT 和 Host-Only 上各测五轮上传与下载，本轮 Host-Only 上传中位耗时更短，NAT 下载中位耗时更短。 |
 
-```powershell
-# 默认下载 P1 到 Windows 的 Downloads\bilibili-network
-.\download-bilibili.ps1 BV1Fb4111732
+## Windows 端到端验收
 
-# 显式指定分 P 和仓库外的输出目录
-.\download-bilibili.ps1 BV1Fb4111732 -Part 1 -OutputDirectory "$HOME\Videos\Bilibili"
-```
-
-入口接收 BV 号，成品命名为 `BV号_p编号.mp4`。它通过 `ssh ubuntu` 调用 Ubuntu 脚本，每次下载使用 `~/Downloads/bilibili-network/windows-<运行标识>` 下的独立目录。Ubuntu 脚本会打印成品路径，并在该目录保留 MP4。
-
-下载成功后，入口用 `scp` 把成品传到 Windows 输出目录内的临时文件，再以成品名保存。目标已存在时，入口提示并保留原文件，正常退出。Ubuntu 下载或传输失败时，入口报告失败阶段并返回非零状态，未完成的本地传输文件会清理。
-
-### Windows 端到端验证
-
-使用默认参数下载 `BV1Fb4111732` 的 P1。Windows 上用 `Get-FileHash -Algorithm SHA256`，Ubuntu 上用 `sha256sum` 核对了同一次下载的 MP4。两端均为 36,881,744 字节，SHA-256 均为 `5d1f9fdd32d7aeec7b195f169381f8ae43a9028770044bd19777696961346c6e`。再次运行显示 `Already exists. Keeping:`，Windows 成品的大小、修改时间和 SHA-256 均保持一致。
+2026-11-20 在 Windows 游戏本上，通过 `ssh ubuntu` 下载 `BV1Fb4111732` 的 P1 到新建的本地目录。Windows 与 Ubuntu 的 MP4 均为 36,881,744 字节，SHA-256 均为 `5d1f9fdd32d7aeec7b195f169381f8ae43a9028770044bd19777696961346c6e`。`ffprobe` 读到 H.264 640 × 360 视频和 AAC 音频，时长约 634.57 秒。相同命令再次运行时提示 `Already exists. Keeping:`，本地文件的大小、修改时间和 SHA-256 均保持一致。
 
 ## 首次手动下载实验
 
