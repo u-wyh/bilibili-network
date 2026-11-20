@@ -91,6 +91,7 @@ Bash 脚本接收 BV 号、`bilibili.com/video/BV…` 视频页链接，或直�
 | [05 · TCP 延迟](docs/05-tcp-latency.md) | 在隔离客户端给出站流量增加 80 ms，Host-Only 的 TCP 建连中位数从 1.032 ms 升至 84.113 ms，下载总耗时也随之上升。 |
 | [06 · 游戏本与 Ubuntu 的双向 SCP](docs/06-local-ssh.md) | 在 NAT 和 Host-Only 上各测五轮上传与下载，本轮 Host-Only 上传中位耗时更短，NAT 下载中位耗时更短。 |
 | [07 · 第二版下载计时与双路径取回](docs/07-download-timing.md) | 分开计量真实下载与 SCP 取回，并复用同一 Ubuntu 成品对照两条取回路径，十次均通过 SHA-256 校验。 |
+| [08 · TCP 丢包与传输恢复](docs/08-tcp-loss-recovery.md) | 在隔离容器中测三档出站丢包并抓到 TCP 补段，再用单连接重置验证 curl 留下残片、重新请求可完整取回。 |
 
 ## Windows 端到端验收
 
