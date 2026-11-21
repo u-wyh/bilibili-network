@@ -1,5 +1,6 @@
 Bilibili Cache / B 站浏览与缓存
 https://github.com/u-wyh/bilibili-network
+使用前请阅读同目录下的 DISCLAIMER.md。
 
 Windows x64
 Extract the entire archive and double-click Bilibili-Download.exe.

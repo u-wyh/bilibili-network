@@ -41,13 +41,14 @@ if ($PSCmdlet.ParameterSetName -eq 'Offline') {
 }
 ($pythonPaths + 'import site') | Set-Content -Encoding ASCII -LiteralPath $searchPath.FullName
 
-foreach ($file in 'main.py','platform_support.py','account_session.py','bilibili.py','cache_library.py','cache_worker.py','style.qss','requirements.txt') {
+foreach ($file in 'main.py','platform_support.py','account_session.py','bilibili.py','cache_library.py','cache_worker.py','style.qss','requirements.txt','icon.png','icon.ico') {
     Copy-Item -LiteralPath (Join-Path $repo "app/$file") -Destination (Join-Path $bundle 'app')
 }
 
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 $launcher = Join-Path $bundle 'Bilibili-Download.exe'
-& $compiler /nologo /target:winexe /codepage:65001 /reference:System.Windows.Forms.dll "/out:$launcher" (Join-Path $PSScriptRoot 'Launcher.cs')
+$icon = Join-Path $repo 'app/icon.ico'
+& $compiler /nologo /target:winexe /codepage:65001 /reference:System.Windows.Forms.dll "/win32icon:$icon" "/out:$launcher" (Join-Path $PSScriptRoot 'Launcher.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Could not build the launcher.' }
 
 $python = Join-Path $runtime 'python.exe'
@@ -59,6 +60,7 @@ if ($PSCmdlet.ParameterSetName -eq 'Offline') {
 if ($LASTEXITCODE -ne 0) { throw 'The bundled Python could not import the application.' }
 
 Copy-Item -LiteralPath (Join-Path $repo 'packaging/portable-readme.txt') -Destination (Join-Path $bundle 'README.txt')
+Copy-Item -LiteralPath (Join-Path $repo 'DISCLAIMER.md') -Destination $bundle
 & tar.exe -a -cf $zip -C $stage 'Bilibili-Download'
 if ($LASTEXITCODE -ne 0) { throw 'Could not create the portable ZIP.' }
 Write-Output "BUNDLE=$bundle"

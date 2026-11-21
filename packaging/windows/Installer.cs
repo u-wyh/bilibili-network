@@ -48,7 +48,7 @@ internal static class Program
 internal static class Install
 {
     internal const string Product = "B 站浏览与缓存";
-    internal const string Version = "0.1.1";
+    internal const string Version = "0.1.2";
     private const string RegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\BilibiliCache";
     private const string OwnershipMarker = ".bilibili-cache-install";
     private static readonly string Local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -174,9 +174,19 @@ internal static class Install
         dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell"));
         string path = ShortcutPath(folder);
         dynamic shortcut = shell.CreateShortcut(path);
-        if (File.Exists(path) && !String.Equals((string)shortcut.TargetPath, Launcher, StringComparison.OrdinalIgnoreCase))
-            return;
+        if (File.Exists(path))
+        {
+            string target = shortcut.TargetPath;
+            string directory = Path.GetDirectoryName(target);
+            if (String.IsNullOrEmpty(directory)
+                || !String.Equals(Path.GetDirectoryName(directory), Root, StringComparison.OrdinalIgnoreCase)
+                || !Path.GetFileName(directory).StartsWith("app-", StringComparison.OrdinalIgnoreCase)
+                || !String.Equals(Path.GetFileName(target), Path.GetFileName(Launcher), StringComparison.OrdinalIgnoreCase)
+                || !File.Exists(Path.Combine(directory, OwnershipMarker)))
+                return;
+        }
         shortcut.TargetPath = Launcher;
+        shortcut.IconLocation = Launcher + ",0";
         shortcut.WorkingDirectory = VersionDir;
         shortcut.Description = "浏览 B 站并缓存视频";
         shortcut.Save();
@@ -245,6 +255,7 @@ internal sealed class SetupWindow : Form
     internal SetupWindow()
     {
         Text = Install.Product + " 安装程序";
+        Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         ClientSize = new Size(560, 326);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;

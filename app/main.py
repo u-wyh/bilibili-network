@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import quote, urlencode
 
 from PySide6.QtCore import QCoreApplication, QDateTime, QEvent, QLockFile, QSettings, QSignalBlocker, Qt, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtNetwork import QNetworkCookie
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -844,6 +844,7 @@ if __name__ == "__main__":
         os.environ.setdefault("QT_WEBVIEW_PLUGIN", "webview2")
         os.environ.setdefault("WEBVIEW2_USER_DATA_FOLDER", str(APP_DATA / "preview-browser"))
     application = QApplication(sys.argv)
+    application.setWindowIcon(QIcon(str(Path(__file__).with_name("icon.png"))))
     if WINDOWS:
         QtWebView.initialize()
     application.setStyleSheet(Path(__file__).with_name("style.qss").read_text(encoding="utf-8"))

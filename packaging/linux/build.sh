@@ -18,8 +18,9 @@ bundle="$stage/Bilibili-Download"
 mkdir -p -- "$bundle/app" "$bundle/bootstrap"
 cp -- "$repo/Bilibili-Download.sh" "$repo/download-bilibili.sh" "$bundle/"
 cp -- "$repo/packaging/portable-readme.txt" "$bundle/README.txt"
+cp -- "$repo/DISCLAIMER.md" "$bundle/"
 cp -- "$pip_wheel" "$bundle/bootstrap/pip.whl"
-for file in main.py platform_support.py account_session.py bilibili.py cache_library.py cache_worker.py style.qss requirements.txt; do
+for file in main.py platform_support.py account_session.py bilibili.py cache_library.py cache_worker.py style.qss requirements.txt icon.png; do
     cp -- "$repo/app/$file" "$bundle/app/"
 done
 tar -czf "$archive" -C "$stage" Bilibili-Download
