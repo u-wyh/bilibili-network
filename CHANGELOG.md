@@ -1,5 +1,11 @@
 # 更新日志
 
+## v0.1.1
+
+- Windows 新增图形安装向导，显示解压、运行组件安装和快捷方式创建进度。
+- 安装完成后，可从开始菜单或可选的桌面快捷方式启动。Windows 设置会显示卸载入口。
+- Linux x64 下载继续使用 v0.1.0 发布包。[Linux 下载](https://github.com/u-wyh/bilibili-network/releases/download/v0.1.0/bilibili-cache-linux-x64.tar.gz)
+
 ## v0.1.0
 
 - 首次发布 Windows x64 和 Linux x64 桌面预览版。

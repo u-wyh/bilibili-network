@@ -6,7 +6,7 @@
 
 | 平台 | 下载 | 启动方式 |
 | --- | --- | --- |
-| Windows x64 | [ZIP](https://github.com/u-wyh/bilibili-network/releases/download/v0.1.0/bilibili-cache-windows-x64.zip) | 整包解压，双击 `Bilibili-Download.exe`。包内含 Python，首次启动联网安装 Qt、yt-dlp 和 FFmpeg。应用内预览需要 Microsoft Edge WebView2。 |
+| Windows x64 | [图形安装包 EXE](https://github.com/u-wyh/bilibili-network/releases/download/v0.1.1/Bilibili-Cache-Setup-v0.1.1-x64.exe) | 双击后点 **安装**。运行组件在后台联网安装，完成后可从开始菜单或桌面快捷方式打开。应用内预览需要 Microsoft Edge WebView2。 |
 | Linux x64 | [tar.gz](https://github.com/u-wyh/bilibili-network/releases/download/v0.1.0/bilibili-cache-linux-x64.tar.gz) | 解压后运行 `bash ./Bilibili-Download.sh`。需 Python 3.10+ 和 venv，首次启动联网安装依赖。预览可用系统浏览器。 |
 
 发布记录和校验文件在 [GitHub Releases](https://github.com/u-wyh/bilibili-network/releases)。源码启动和打包方法见 [构建与发布](docs/build-and-release.md)。

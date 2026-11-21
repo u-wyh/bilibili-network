@@ -23,7 +23,8 @@ def main():
             except FileExistsError:
                 if not (target / marker).is_file():
                     raise
-    subprocess.Popen([str(python.with_name("pythonw.exe")), "-B", str(app / "main.py")])
+    if "--install-only" not in sys.argv[1:]:
+        subprocess.Popen([str(python.with_name("pythonw.exe")), "-B", str(app / "main.py")])
 
 
 if __name__ == "__main__":
@@ -31,5 +32,6 @@ if __name__ == "__main__":
         main()
     except (OSError, subprocess.SubprocessError) as error:
         print(error, file=sys.stderr)
-        input("Setup did not finish. Check the network and start Bilibili-Download.exe again.")
+        if "--install-only" not in sys.argv[1:]:
+            input("Setup did not finish. Check the network and start Bilibili-Download.exe again.")
         raise SystemExit(1)

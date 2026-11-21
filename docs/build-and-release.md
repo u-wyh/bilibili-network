@@ -18,13 +18,13 @@ bash ./Bilibili-Download.sh
 
 ## 打包
 
-Windows 的公开 ZIP 需要官方 CPython Windows x64 嵌入式 ZIP、PyPI 的通用 pip wheel，以及 Windows 自带的 .NET Framework C# 编译器。从仓库根目录运行：
+Windows 图形安装包需要官方 CPython Windows x64 嵌入式 ZIP、PyPI 的通用 pip wheel，以及 .NET Framework C# 编译器。在仓库根目录运行：
 
 ```powershell
-.\packaging\windows\build.ps1 -PythonRuntimeZip $pythonZip -PipWheel $pipWheel -OutputDirectory $output
+.\packaging\windows\build-installer.ps1 -PythonRuntimeZip $pythonZip -PipWheel $pipWheel -OutputDirectory $output
 ```
 
-想在本机构建离线包时，可以使用同一 Python 版本和架构的依赖目录，改用 `-SitePackages $sitePackages` 参数。
+也可以用 `packaging/windows/build.ps1` 生成本机离线 ZIP。该脚本的 `-SitePackages` 参数接受同一 Python 版本和架构的依赖目录。
 
 Linux 的打包脚本接受输出目录和通用 pip wheel 路径：
 

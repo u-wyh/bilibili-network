@@ -47,7 +47,7 @@ foreach ($file in 'main.py','platform_support.py','account_session.py','bilibili
 
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 $launcher = Join-Path $bundle 'Bilibili-Download.exe'
-& $compiler /nologo /target:winexe /reference:System.Windows.Forms.dll "/out:$launcher" (Join-Path $PSScriptRoot 'Launcher.cs')
+& $compiler /nologo /target:winexe /codepage:65001 /reference:System.Windows.Forms.dll "/out:$launcher" (Join-Path $PSScriptRoot 'Launcher.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Could not build the launcher.' }
 
 $python = Join-Path $runtime 'python.exe'

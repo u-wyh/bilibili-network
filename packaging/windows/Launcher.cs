@@ -12,9 +12,14 @@ internal static class Launcher
         string runtime = Path.Combine(root, "runtime");
         string setup = Path.Combine(root, "app", "setup_runtime.py");
         string ready = Path.Combine(runtime, "Lib", "site-packages", ".bili-cache-ready");
-        bool install = File.Exists(setup) && !File.Exists(ready);
-        string python = Path.Combine(runtime, install ? "python.exe" : "pythonw.exe");
-        string app = install ? setup : Path.Combine(root, "app", "main.py");
+        if (File.Exists(setup) && !File.Exists(ready))
+        {
+            MessageBox.Show("运行组件尚未安装，请重新运行 Bilibili-Cache-Setup 安装包。",
+                "Bilibili Cache", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+        string python = Path.Combine(runtime, "pythonw.exe");
+        string app = Path.Combine(root, "app", "main.py");
 
         try
         {
