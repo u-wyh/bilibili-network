@@ -1,4 +1,27 @@
-# B 站单分 P 下载
+# B 站浏览与缓存
+
+一个在 Windows 和 Linux 上浏览 B 站、缓存视频和管理本地 MP4 的桌面应用。包含用于学习 HTTP、TCP、SSH 和虚拟机网络的实验报告。
+
+## 下载桌面版
+
+| 平台 | 下载 | 启动方式 |
+| --- | --- | --- |
+| Windows x64 | [ZIP](https://github.com/u-wyh/bilibili-network/releases/download/v0.1.0/bilibili-cache-windows-x64.zip) | 整包解压，双击 `Bilibili-Download.exe`。包内含 Python，首次启动联网安装 Qt、yt-dlp 和 FFmpeg。应用内预览需要 Microsoft Edge WebView2。 |
+| Linux x64 | [tar.gz](https://github.com/u-wyh/bilibili-network/releases/download/v0.1.0/bilibili-cache-linux-x64.tar.gz) | 解压后运行 `bash ./Bilibili-Download.sh`。需 Python 3.10+ 和 venv，首次启动联网安装依赖。预览可用系统浏览器。 |
+
+发布记录和校验文件在 [GitHub Releases](https://github.com/u-wyh/bilibili-network/releases)。源码启动和打包方法见 [构建与发布](docs/build-and-release.md)。
+
+## 桌面版使用
+
+1. 像平常一样浏览 B 站，也可以在顶部输入关键词后点 **搜索 / 打开**。点击 BV 视频或番剧单集会打开预览，想保存时再点 **缓存当前视频**。开启 **点击卡片直接缓存** 后，卡片会直接入队，右侧仍会显示刚选中的视频，供选集或在系统浏览器打开。
+2. 想连续缓存多集时，选择 **选集缓存**。按列表序号输入起止范围，例如 **98 到 110**，点 **选择这段** 即可一次勾选整段。也可以全选、从当前集开始，或单独取消某几集。所选视频按列表顺序加入队列。
+3. 下载完成后，打开 **本地缓存** 播放或删除文件。列表会在重启后保留。删除需要确认，仅针对选中的应用缓存。桌面版和 Windows 命令行默认都把成品直接放在 Windows 下载文件夹下的 `bilibili-network` 目录，批量选集也使用这个目录。
+
+缓存使用顶部 **登录 B 站** 获取的浏览会话。登录信息由 Windows 当前用户保护并保存在本机，重启后继续使用，直到 B 站会话失效或你点击 **退出缓存账号**。B 站确认当前账号的大会员有效时，顶部显示 **大会员已验证**。番剧缓存使用该账号直接读取 B 站网页播放接口提供的正片和画质。仅有试看或受保护的播放流时，应用会给出对应提示。
+
+Windows 的 WebView2 播放器独立保管网页登录态。预览页要求登录时，可在该页登录。播放器报错时，可点 **用系统浏览器观看** 打开同一分集。Linux 需要已解锁的 Secret Service 密钥环才能跨重启保留缓存账号。桌面版在本机合并 MP4，已有同名成品会保留。
+
+反馈问题前可查阅 [贡献说明](CONTRIBUTING.md) 和 [更新日志](CHANGELOG.md)。
 
 ## Windows 快速开始
 

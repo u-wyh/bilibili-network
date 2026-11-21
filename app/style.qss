@@ -1,0 +1,131 @@
+QMainWindow, QWidget {
+    color: #202e32;
+    font-family: "Microsoft YaHei UI", "Segoe UI";
+    font-size: 13px;
+}
+#header {
+    background: #193438;
+}
+#brand {
+    color: #f4fffc;
+    font-size: 17px;
+    font-weight: 700;
+    padding-right: 12px;
+}
+#header QPushButton {
+    background: #29474a;
+    border-color: #395a5c;
+    color: #f4fffc;
+}
+#header QPushButton:hover {
+    background: #3a6262;
+}
+#header QPushButton:disabled {
+    color: #abcbc4;
+}
+QLineEdit {
+    color: #213537;
+    background: #edf5f2;
+    border: 1px solid #96b8b1;
+    border-radius: 8px;
+    min-height: 22px;
+    padding: 5px 10px;
+    selection-background-color: #177f6f;
+}
+QLineEdit:focus, QComboBox:focus, QListWidget:focus {
+    border-color: #168576;
+}
+#sidebar {
+    background: #f5f8f6;
+    border-left: 1px solid #dce8e3;
+}
+#sectionTitle {
+    color: #193438;
+    font-size: 20px;
+    font-weight: 700;
+}
+QLabel#muted {
+    color: #4b6561;
+}
+QPushButton, QComboBox {
+    background: #fff;
+    border: 1px solid #d0dfd9;
+    border-radius: 8px;
+    padding: 6px 9px;
+    min-height: 20px;
+}
+QPushButton:hover, QComboBox:hover {
+    background: #e3f1eb;
+    border-color: #a7c4bb;
+}
+QPushButton:disabled {
+    color: #64766e;
+    background: #e4ebe8;
+    border-color: #e4ebe8;
+}
+QPushButton#primary {
+    background: #166e60;
+    border-color: #166e60;
+    color: #fff;
+    font-weight: 700;
+}
+QPushButton#primary:hover {
+    background: #0c564a;
+}
+QPushButton#primary:disabled {
+    background: #e4ebe8;
+    border-color: #e4ebe8;
+    color: #566d65;
+}
+QPushButton#danger:enabled {
+    color: #9f3034;
+}
+QPushButton#danger:hover {
+    background: #f6e4e4;
+    border-color: #e4b3b6;
+}
+QTabWidget::pane {
+    border: 0;
+}
+QTabBar::tab {
+    background: #e7efec;
+    border-radius: 6px;
+    margin-right: 4px;
+    padding: 7px 13px;
+}
+QTabBar::tab:selected {
+    background: #d5e9e2;
+    color: #164d44;
+    font-weight: 700;
+}
+QCheckBox {
+    font-weight: 700;
+    spacing: 8px;
+    padding: 4px 0;
+}
+QListWidget {
+    background: #fff;
+    border: 1px solid #dce8e3;
+    border-radius: 8px;
+    padding: 4px;
+}
+QListWidget::item {
+    padding: 7px;
+    border-bottom: 1px solid #e7eeea;
+}
+QListWidget::item:selected {
+    color: #163933;
+    background: #d8ede5;
+}
+QProgressBar {
+    background: #e3ebe8;
+    border: 0;
+    color: #183731;
+    border-radius: 6px;
+    text-align: center;
+    min-height: 17px;
+}
+QProgressBar::chunk {
+    background: #78cabb;
+    border-radius: 6px;
+}
