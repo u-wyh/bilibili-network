@@ -93,6 +93,7 @@ Bash 脚本接收 BV 号、`bilibili.com/video/BV…` 视频页链接，或直�
 | [07 · 第二版下载计时与双路径取回](docs/07-download-timing.md) | 分开计量真实下载与 SCP 取回，并复用同一 Ubuntu 成品对照两条取回路径，十次均通过 SHA-256 校验。 |
 | [08 · TCP 丢包与传输恢复](docs/08-tcp-loss-recovery.md) | 在隔离容器中测三档出站丢包并抓到 TCP 补段，再用单连接重置验证 curl 留下残片、重新请求可完整取回。 |
 | [09 · HTTP 断点续传与 If-Range](docs/09-http-range-resume.md) | 在相同断点对照三种 HTTP 恢复请求，确认 ETag 匹配时只取回缺失部分，旧 ETag 会得到完整的新文件。 |
+| [10 · 游戏本到轻薄本的 SSH 传输](docs/10-lightbook-ssh-transfer.md) | 用同一文件比较 Ubuntu Host-Only 与轻薄本 Tailscale 直连的 SCP 上传，并用 SSH 套接字和 Tailscale 状态验证路径。 |
 
 ## Windows 端到端验收
 
