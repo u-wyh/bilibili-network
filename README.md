@@ -9,7 +9,7 @@
 | 平台 | 下载 | 启动方式 |
 | --- | --- | --- |
 | Windows x64 | [图形安装包 EXE](https://github.com/u-wyh/bilibili-network/releases/download/v0.1.2/Bilibili-Cache-Setup-v0.1.2-x64.exe) | 双击后点 **安装**。运行组件在后台联网安装，完成后可从开始菜单或桌面快捷方式打开。应用内预览需要 Microsoft Edge WebView2。 |
-| Linux x64 | [tar.gz](https://github.com/u-wyh/bilibili-network/releases/download/v0.1.0/bilibili-cache-linux-x64.tar.gz) | 解压后运行 `bash ./Bilibili-Download.sh`。需 Python 3.10+ 和 venv，首次启动联网安装依赖。预览可用系统浏览器。 |
+| Linux x64 | [tar.gz](https://github.com/u-wyh/bilibili-network/releases/download/v0.1.3/bilibili-cache-linux-x64.tar.gz) | 解压后在 Linux 图形桌面上运行 `bash ./Bilibili-Download.sh`。需 Python 3.10+ 和 venv，首次启动联网安装依赖。[Linux 常见问题](docs/build-and-release.md#linux-常见问题) |
 
 发布记录和校验文件在 [GitHub Releases](https://github.com/u-wyh/bilibili-network/releases)。源码启动和打包方法见 [构建与发布](docs/build-and-release.md)。
 
@@ -21,7 +21,7 @@
 
 缓存使用顶部 **登录 B 站** 获取的浏览会话。登录信息由 Windows 当前用户保护并保存在本机，重启后继续使用，直到 B 站会话失效或你点击 **退出缓存账号**。B 站确认当前账号的大会员有效时，顶部显示 **大会员已验证**。番剧缓存使用该账号直接读取 B 站网页播放接口提供的正片和画质。仅有试看或受保护的播放流时，应用会给出对应提示。
 
-Windows 的 WebView2 播放器独立保管网页登录态。预览页要求登录时，可在该页登录。播放器报错时，可点 **用系统浏览器观看** 打开同一分集。Linux 需要已解锁的 Secret Service 密钥环才能跨重启保留缓存账号。桌面版在本机合并 MP4，已有同名成品会保留。
+Windows 的 WebView2 播放器独立保管网页登录态。预览页要求登录时，可在该页登录。Linux 内置预览可能因媒体格式无法播放，可点 **用系统浏览器观看** 打开同一分集。系统浏览器的登录与缓存账号各自独立。Linux 需要已解锁的 Secret Service 密钥环才能跨重启保留缓存账号。桌面版在本机合并 MP4，已有同名成品会保留。
 
 反馈问题前可查阅 [贡献说明](CONTRIBUTING.md) 和 [更新日志](CHANGELOG.md)。
 

@@ -41,8 +41,8 @@ class AccountStore:
                 saved = self.secret_service().get_password("Bilibili Network", str(self.path))
                 self.keyring_saved = bool(saved)
                 return json.loads(saved) if saved else []
-            except Exception:
-                return []
+            except Exception as exc:
+                raise OSError("System keyring unavailable") from exc
         if not self.path.is_file():
             return []
         return json.loads(protect(self.path.read_bytes(), decrypt=True))
@@ -86,6 +86,24 @@ class AccountStore:
 
     @staticmethod
     def secret_service():
+        import secretstorage
         from keyring.backends.SecretService import Keyring
+        from keyring.errors import KeyringLocked
 
-        return Keyring()
+        class UnlockedKeyring(Keyring):
+            def get_preferred_collection(self):
+                connection = secretstorage.dbus_init()
+                try:
+                    collection = secretstorage.Collection(connection)
+                    self.unlock(collection)
+                    return collection
+                except Exception:
+                    connection.close()
+                    raise
+
+            def unlock(self, item):
+                # The app must stay usable even without a desktop unlock prompt.
+                if item.is_locked():
+                    raise KeyringLocked("System keyring is locked")
+
+        return UnlockedKeyring()

@@ -16,6 +16,12 @@ bash ./Bilibili-Download.sh
 
 两个入口会在用户目录建立独立虚拟环境。Linux 源码入口的系统 Python 需要可用的 `ensurepip`，预览版归档包含 pip 启动依赖。
 
+### Linux 常见问题
+
+- **应用没打开**。请在图形桌面上打开终端运行启动脚本。Ubuntu 24.04 上，如果报错提到 Qt 的 `xcb` 插件或 `libxcb-cursor0`，先安装对应的系统包 `sudo apt install libxcb-cursor0`。
+- **页面能打开，播放器报错**。点右侧 **用系统浏览器观看**。某些 Linux 环境下内置浏览组件无法解码 B 站提供的格式。**缓存当前视频** 会另行请求可用媒体流，结果以缓存队列提示为准。
+- **每次启动都要扫码**。跨重启保留登录需要当前桌面会话的 Secret Service 和已解锁的密钥环，例如 GNOME Keyring。解锁后可重开应用读取原有登录，必要时重新扫码。
+
 ## 打包
 
 Windows 图形安装包需要官方 CPython Windows x64 嵌入式 ZIP、PyPI 的通用 pip wheel，以及 .NET Framework C# 编译器。在仓库根目录运行：

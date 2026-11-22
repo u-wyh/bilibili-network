@@ -412,6 +412,8 @@ class App(QMainWindow):
         if reference:
             video_id, part = reference
             label = video_id if video_id.startswith("ep") else f"{video_id} · P{part}"
+            if not WINDOWS:
+                label += "\n预览无法播放时，可用系统浏览器观看。"
             self.selection_label.setText(f"当前选中：{label}")
         else:
             self.selection_label.setText("请先选中一个视频或具体分集。")
@@ -645,7 +647,11 @@ class App(QMainWindow):
     def restore_login(self):
         try:
             records = self.account_store.load()
-        except (OSError, ValueError):
+        except OSError:
+            records = []
+            self.status.setText("无法读取已保留的登录，请重新登录。" if WINDOWS else
+                                "无法读取系统密钥环。请解锁桌面密钥环后重开应用，或扫码临时登录。")
+        except ValueError:
             records = []
             self.status.setText("无法读取已保留的登录，请重新登录。")
         self.restoring_login = True
@@ -688,7 +694,8 @@ class App(QMainWindow):
             } for cookie in cookies]
             self.account_store.save(records)
         except OSError:
-            self.status.setText("当前登录仍可使用，但这次未能保留到下次启动。")
+            self.status.setText("当前登录仍可使用，但这次未能保留到下次启动。" if WINDOWS else
+                                "当前登录可用。请解锁桌面密钥环并重新扫码，以保留登录。")
 
     def logged_in(self):
         return any(cookie.name == "SESSDATA" and not cookie.is_expired() for cookie in self.cookies.values())

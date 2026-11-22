@@ -5,6 +5,11 @@ app_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 data_dir="${XDG_DATA_HOME:-$HOME/.local/share}/bilibili-network"
 python="$data_dir/linux-app-venv/bin/python"
 
+if [[ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}${WAYLAND_SOCKET:-}${QT_QPA_PLATFORM:-}" ]]; then
+    printf '%s\n' '请从 Linux 图形桌面的终端启动应用（当前未检测到 X11 或 Wayland 显示会话）。' >&2
+    exit 1
+fi
+
 if [[ ! -x "$python" ]]; then
     if ! python3 -m venv --without-pip "$data_dir/linux-app-venv"; then
         printf '%s\n' '需要 Python 3.10+ 和 venv。Ubuntu 可安装 python3-venv。' >&2
